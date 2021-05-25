@@ -1,17 +1,22 @@
 <template>
   <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
+    <!--    <img alt="Vue logo" src="./assets/logo.png">-->
+    <os msg="操作系统课程设计"></os>
   </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+// import HelloWorld from './components/HelloWorld.vue'
+import os from './components/os.vue'
 
 export default {
   name: 'App',
+  props: {
+    msg: String
+  },
   components: {
-    HelloWorld
+    // HelloWorld,
+    os
   }
 }
 </script>
@@ -23,6 +28,5 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  margin-top: 60px;
 }
 </style>
