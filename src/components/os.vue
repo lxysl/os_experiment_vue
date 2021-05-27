@@ -68,7 +68,7 @@
           </el-tabs>
         </el-aside>
         <el-main width="60%">
-          <el-table :data="pcbData" border style="width: 100%" height="450">
+          <el-table :data="pcb_display" border style="width: 100%" height="450">
             <el-table-column fixed prop="pid" label="进程号" width="80" align="center"></el-table-column>
             <el-table-column prop="time" label="进程所需时间" width="120" align="center"></el-table-column>
             <el-table-column prop="ram" label="进程所需内存" width="120" align="center"></el-table-column>
@@ -113,11 +113,8 @@
           </el-tabs>
         </el-aside>
         <el-main width="60%">
-          <div class="demo-fit">
-            <div class="block" v-for="fit in fits" :key="fit">
-              <span class="title">{{ fit }}</span>
-              <el-avatar shape="square" :size="100" :fit="fit" :src="url"></el-avatar>
-            </div>
+          <div class="echarts">
+            <div id="echarts" style="height: 450px;"></div>
           </div>
         </el-main>
       </el-container>
@@ -136,8 +133,27 @@ export default {
     return {
       operationName: 'tab_first',
       displayName: 'tab_first',
-      fits: ['fill'],
-      url: 'https://fuss10.elemecdn.com/e/5d/4a731a90594a4af544c0c25941171jpeg.jpeg',
+      pcbState: [
+        {
+          "id": 0,
+          "name": "进程创建",
+        }, {
+          "id": 1,
+          "name": "活动就绪",
+        }, {
+          "id": 2,
+          "name": "静止就绪",
+        }, {
+          "id": 3,
+          "name": "进程运行",
+        }, {
+          "id": 4,
+          "name": "进程挂起",
+        }, {
+          "id": 5,
+          "name": "进程结束",
+        },
+      ],
       form: {
         time: '',
         ram: '',
@@ -150,6 +166,8 @@ export default {
       processors: [],
       backupQueue: [],
       hangingQueue: [],
+      nodes: [],
+      edges: []
     };
   },
   computed: {
@@ -169,10 +187,28 @@ export default {
       }
       return options;
     },
+    pcb_display: function () {
+      // 将返回的数据转换为用于在表格中显示的形式
+      var PCB_display = JSON.parse(JSON.stringify(this.pcbData));
+      for (var i = 0; i < PCB_display.length; i++) {
+        var pcb = PCB_display[i];
+        if (pcb.precursor.length === 0) {
+          pcb.precursor = '无';
+        } else {
+          pcb.precursor = pcb.precursor.join(',');
+        }
+        if (pcb.successor.length === 0) {
+          pcb.successor = '无';
+        } else {
+          pcb.successor = pcb.successor.join(',');
+        }
+      }
+      return PCB_display;
+    },
     non_hanging_pcb_value: function () {
       var values = [];
       for (var i = 0; i < this.pcbData.length; i++) {
-        if (this.pcbData[i].state !== '进程结束'){
+        if (this.pcbData[i].state !== '进程结束') {
           values.push({
             'key': this.pcbData[i].pid,
           });
@@ -186,7 +222,7 @@ export default {
         values.push(this.hangingQueue[i].pid);
       }
       return values;
-    }
+    },
   },
   watch: {
     pcbData: function () {
@@ -194,7 +230,15 @@ export default {
       this.getProcessors();
       this.getBackupQueue();
       this.getHangingQueue();
+      this.getNodes();
+      this.getEdges();
     },
+    nodes: function () {
+      this.myEcharts();
+    },
+    edges: function () {
+      this.myEcharts();
+    }
   },
   methods: {
     refresh() {
@@ -203,7 +247,7 @@ export default {
         url: "http://127.0.0.1:5000/os/get_PCB_list", // 接口地址
       }).then(response => {
         console.log(response);   // 成功的返回
-        this.pcbData = this.transferPCB(response.data['pcb_list']); // 将返回的数据转换为用于在表格中显示的形式
+        this.pcbData = response.data['pcb_list']; // 将返回的数据转换为用于在表格中显示的形式
       }).catch(error => console.log(error, "error")); // 失败的返回
     },
     run() {
@@ -212,7 +256,7 @@ export default {
         url: "http://127.0.0.1:5000/os/run",
       }).then(response => {
         console.log(response);
-        this.pcbData = this.transferPCB(response.data['pcb_list']);
+        this.pcbData = response.data['pcb_list'];
       }).catch(error => {
         console.log(error.response, "error");
         this.$message({
@@ -235,7 +279,7 @@ export default {
         data: {'form': this.form,}
       }).then(response => {
         console.log(response);   // 成功的返回
-        this.pcbData = this.transferPCB(response.data['pcb_list']); // 将返回的数据转换为用于在表格中显示的形式
+        this.pcbData = response.data['pcb_list']; // 将返回的数据转换为用于在表格中显示的形式
       }).catch(error => {
         console.log(error.response, "error");
         this.$message({
@@ -244,73 +288,13 @@ export default {
         });
       }); // 失败的返回
     },
-    transferPCB(pcb_list) {
-      // 将返回的数据转换为用于在表格中显示的形式
-      for (var i = 0; i < pcb_list.length; i++) {
-        switch (pcb_list[i].property) {
-          case 'INDEPENDENT':
-            pcb_list[i].property = '独立进程';
-            break;
-          case 'SYNCHRONIZED':
-            pcb_list[i].property = '同步进程';
-            break;
-        }
-        switch (pcb_list[i].state) {
-          case 'CREATE':
-            pcb_list[i].state = '创建';
-            break;
-          case 'ACTIVE_READY':
-            pcb_list[i].state = '活动就绪';
-            break;
-          case 'STATIC_READY':
-            pcb_list[i].state = '静止就绪';
-            break;
-          case 'RUNNING':
-            pcb_list[i].state = '进程运行';
-            break;
-          case 'SUSPENDING':
-            pcb_list[i].state = '进程挂起';
-            break;
-          case 'EXIT':
-            pcb_list[i].state = '进程结束';
-            break;
-        }
-        if (pcb_list[i].precursor.length === 0) {
-          pcb_list[i].precursor = '无';
-        } else {
-          pcb_list[i].precursor = pcb_list[i].precursor.join(',');
-        }
-        if (pcb_list[i].successor.length === 0) {
-          pcb_list[i].successor = '无';
-        } else {
-          pcb_list[i].successor = pcb_list[i].successor.join(',');
-        }
-      }
-      return pcb_list;
-    },
-    transferMainMemory(main_memory) {
-      for (var i = 0; i < main_memory.length; i++) {
-        switch (main_memory[i].memory_state) {
-          case 'UNASSIGNED':
-            main_memory[i].memory_state = '未分配';
-            break;
-          case 'ASSIGNED':
-            main_memory[i].memory_state = '已分配';
-            break;
-          case 'OS_ASSIGNED':
-            main_memory[i].memory_state = '操作系统';
-            break;
-        }
-      }
-      return main_memory;
-    },
     getMainMemory() {
       this.$axios({
         method: "get",
         url: "http://127.0.0.1:5000/os/get_main_memory",
       }).then(response => {
         console.log(response);
-        this.mainMemory = this.transferMainMemory(response.data['main_memory']);
+        this.mainMemory = response.data['main_memory'];
       }).catch(error => console.log(error, "error"));
     },
     getProcessors() {
@@ -359,7 +343,7 @@ export default {
         data: {'form': pcbList,}
       }).then(response => {
         console.log(response);
-        this.pcbData = this.transferPCB(response.data['pcb_list']);
+        this.pcbData = response.data['pcb_list'];
       }).catch(error => console.log(error, "error"));
     },
     unhangPCBList(pcbList) {
@@ -369,9 +353,74 @@ export default {
         data: {'form': pcbList,}
       }).then(response => {
         console.log(response);
-        this.pcbData = this.transferPCB(response.data['pcb_list']);
+        this.pcbData = response.data['pcb_list'];
       }).catch(error => console.log(error, "error"));
+    },
+    getNodes() {
+      var nodes = [];
+      for (var i = 0; i < this.pcbData.length; i++) {
+        var pcb = this.pcbData[i];
+        for (var j = 0; j < this.pcbState.length; j++) {
+          if (this.pcbState[j].name === pcb.state) {
+            nodes.push({
+              'name': pcb.pid,
+              'category': this.pcbState[j].id,
+            });
+          }
+        }
+      }
+      this.nodes = nodes;
+    },
+    getEdges() {
+      var edges = [];
+      for (var i = 0; i < this.pcbData.length; i++) {
+        var pcb = this.pcbData[i];
+        for (var j = 0; j < pcb.precursor.length; j++) {
+          edges.push({
+            'source': pcb.pid,
+            'target': j,
+          });
+        }
+      }
+      this.edges = edges;
+    },
+    myEcharts() {
+      var myChart = this.$echarts.init(document.getElementById('echarts'));
+      window.addEventListener("resize", myChart.resize);
+      // 配置图表
+      var option = {
+        legend: {
+          data: ['活动就绪', '静止就绪', '进程运行', '进程挂起', '进程结束']
+        },
+        series: [{
+          type: 'graph',
+          layout: 'force',
+          animation: true,
+          symbolSize: 40,
+          edgeSymbol: ['circle', 'arrow'],
+          label: {
+            fontSize: 15,
+            show: true
+          },
+          draggable: true,
+          force: {
+            layoutAnimation: true,
+            edgeLength: 150,
+            repulsion: 100,
+            gravity: 0.1
+          },
+          categories: this.pcbState,
+          data: this.nodes,
+          edges: this.edges,
+        }]
+      };
+      myChart.setOption(option, true);
     }
+  },
+  mounted() {
+    this.$nextTick(() => {
+      this.myEcharts();
+    })
   }
 }
 </script>
@@ -398,5 +447,9 @@ export default {
 
 .el-transfer-panel {
   width: 150px !important;
+}
+
+.echarts {
+  background-color: #FFFFFF;
 }
 </style>
