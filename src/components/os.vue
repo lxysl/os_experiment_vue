@@ -49,14 +49,14 @@
               <div style="text-align: center; padding-top: 40px">
                 <el-transfer
                     style="text-align: left; display: inline-block"
-                    v-model="hangingValue"
+                    v-model="hanging_value"
                     :titles="['未挂起', '挂起']"
                     :format="{
                       noChecked: '0/${total}',
                       hasChecked: '${checked}/${total}'
                     }"
                     @change="hangingDataChange"
-                    :data="pcb_value">
+                    :data="non_hanging_pcb_value">
                   <span slot-scope="{ option }">{{ option.key }}</span>
                 </el-transfer>
               </div>
@@ -85,10 +85,10 @@
           <el-tabs v-model="displayName" type="border-card">
             <el-tab-pane label="内存空间" name="tab_first" style="height: 380px">
               <el-table :data="mainMemory" border style="width: 100%" height="380">
-                <el-table-column fixed prop="start" label="起址" width="125" align="center"></el-table-column>
+                <el-table-column fixed prop="memory_PCB" label="进程号" width="125" align="center"></el-table-column>
+                <el-table-column prop="start" label="起址" width="125" align="center"></el-table-column>
                 <el-table-column prop="length" label="长度" width="130" align="center"></el-table-column>
                 <el-table-column prop="memory_state" label="分配情况" width="130" align="center"></el-table-column>
-                <el-table-column prop="memory_PCB" label="进程号" width="125" align="center"></el-table-column>
               </el-table>
             </el-tab-pane>
             <el-tab-pane label="处理机" name="tab_second" style="height: 380px">
@@ -169,16 +169,18 @@ export default {
       }
       return options;
     },
-    pcb_value: function () {
+    non_hanging_pcb_value: function () {
       var values = [];
       for (var i = 0; i < this.pcbData.length; i++) {
-        values.push({
-          'key': this.pcbData[i].pid,
-        });
+        if (this.pcbData[i].state !== '进程结束'){
+          values.push({
+            'key': this.pcbData[i].pid,
+          });
+        }
       }
       return values;
     },
-    hangingValue: function () {
+    hanging_value: function () {
       var values = [];
       for (var i = 0; i < this.hangingQueue.length; i++) {
         values.push(this.hangingQueue[i].pid);
@@ -211,7 +213,13 @@ export default {
       }).then(response => {
         console.log(response);
         this.pcbData = this.transferPCB(response.data['pcb_list']);
-      }).catch(error => console.log(error, "error"));
+      }).catch(error => {
+        console.log(error.response, "error");
+        this.$message({
+          message: error.response.data.errMsg,
+          type: 'error'
+        });
+      });
     },
     createPCB() {
       if (this.form.property === 1 && this.form.precursor.length === 0) {
@@ -228,7 +236,13 @@ export default {
       }).then(response => {
         console.log(response);   // 成功的返回
         this.pcbData = this.transferPCB(response.data['pcb_list']); // 将返回的数据转换为用于在表格中显示的形式
-      }).catch(error => console.log(error, "error")); // 失败的返回
+      }).catch(error => {
+        console.log(error.response, "error");
+        this.$message({
+          message: error.response.data.errMsg,
+          type: 'error'
+        });
+      }); // 失败的返回
     },
     transferPCB(pcb_list) {
       // 将返回的数据转换为用于在表格中显示的形式
