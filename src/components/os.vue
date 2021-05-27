@@ -389,7 +389,26 @@ export default {
       window.addEventListener("resize", myChart.resize);
       // 配置图表
       var option = {
+        title: {
+          text: '进程前驱后继图',
+          x: 'center',
+          y: '10px',
+          textStyle: {
+            fontWeight: 'bold',
+            color: '#909399',
+            fontSize: 16
+          }
+        },
         legend: {
+          orient: 'vertical',
+          x: 'right',
+          y: '10px',
+          textStyle: {
+            fontWeight: 'lighter',
+            color: '#909399',
+            fontSize: 14,
+            lineHeight: 20
+          },
           data: ['活动就绪', '静止就绪', '进程运行', '进程挂起', '进程结束']
         },
         series: [{
