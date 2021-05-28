@@ -43,7 +43,7 @@
                   </el-select>
                 </el-form-item>
               </el-form>
-              <el-button type="primary" @click="createPCB">立即创建</el-button>
+              <el-button type="primary" @click="createPCB" style="margin-top: 10px">立即创建</el-button>
             </el-tab-pane>
             <el-tab-pane label="挂起 / 解挂进程" name="tab_second" style="height: 380px">
               <div style="text-align: center; padding-top: 40px">
@@ -62,8 +62,10 @@
               </div>
             </el-tab-pane>
             <el-tab-pane label="运行" name="tab_forth" style="height: 380px">
-              <el-button type="primary" @click="refresh">刷新</el-button>
-              <el-button type="primary" @click="run">运行</el-button>
+              <div style="padding-top: 160px">
+                <el-button type="primary" @click="refresh">刷新</el-button>
+                <el-button type="primary" @click="run">运行</el-button>
+              </div>
             </el-tab-pane>
           </el-tabs>
         </el-aside>
@@ -84,7 +86,7 @@
         <el-aside width="40%" style="padding: 20px">
           <el-tabs v-model="displayName" type="border-card">
             <el-tab-pane label="内存空间" name="tab_first" style="height: 380px">
-              <el-table :data="mainMemory" border style="width: 100%" height="380">
+              <el-table :data="mainMemory" :row-class-name="tableRowClassName" border style="width: 100%" height="380">
                 <el-table-column fixed prop="memory_PCB" label="进程号" width="125" align="center"></el-table-column>
                 <el-table-column prop="start" label="起址" width="125" align="center"></el-table-column>
                 <el-table-column prop="length" label="长度" width="130" align="center"></el-table-column>
@@ -154,6 +156,7 @@ export default {
           "name": "进程结束",
         },
       ],
+      totalMemory: 100,
       form: {
         time: '',
         ram: '',
@@ -171,6 +174,15 @@ export default {
     };
   },
   computed: {
+    os_memory: function () {
+      for (var i = 0; i < this.mainMemory.length; i++) {
+        var partition = this.mainMemory[i];
+        if (partition.memory_state === '操作系统') {
+          return parseInt(partition.length);
+        }
+      }
+      return 20;
+    },
     precursor_flag: function () {
       // eslint-disable-next-line vue/no-side-effects-in-computed-properties
       this.form.precursor = [];
@@ -241,6 +253,15 @@ export default {
     }
   },
   methods: {
+    // eslint-disable-next-line no-unused-vars
+    tableRowClassName({row, rowIndex}) {
+      if (row.memory_state === '操作系统') {
+        return 'warning-row';
+      } else if (row.memory_state === '未分配') {
+        return 'success-row';
+      }
+      return '';
+    },
     refresh() {
       this.$axios({
         method: "get",
@@ -266,6 +287,20 @@ export default {
       });
     },
     createPCB() {
+      if (this.form.time === '' || this.form.ram === '' || this.form.property === '' || this.form.priority === '') {
+        this.$message({
+          message: '表单未填写完整，无法创建进程！',
+          type: 'error'
+        });
+        return;
+      }
+      if (this.form.ram > this.totalMemory - this.os_memory) {
+        this.$message({
+          message: '进程所需内存大于系统内存容量，无法创建进程！',
+          type: 'error'
+        });
+        return;
+      }
       if (this.form.property === 1 && this.form.precursor.length === 0) {
         this.form.property = 0;
         this.$message({
@@ -450,6 +485,8 @@ export default {
   color: #333;
   text-align: center;
   line-height: 60px;
+  font-size: 18px;
+  font-weight: bold;
 }
 
 .el-aside {
@@ -466,6 +503,18 @@ export default {
 
 .el-transfer-panel {
   width: 150px !important;
+}
+
+.el-select {
+  width: 430px !important;
+}
+
+.el-table .warning-row {
+  background: oldlace;
+}
+
+.el-table .success-row {
+  background: #f0f9eb;
 }
 
 .echarts {
