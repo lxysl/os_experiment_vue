@@ -6,7 +6,7 @@
 
 本程序模拟实现处理机调度和内存分配及回收机制，并通过可视化界面观察进程的运行流程与情况。为了实现算法与界面的解耦合，以及绘制更加优美的界面，本实验设计了前后端分离的架构，在后端使用Python的Flask框架实现相关算法并设计通信接口，在前端使用Vue.js框架及Element UI实现可视化界面，前后端通过Axios框架进行通信。
 
-**本仓库为前端实现代码，后端可视化实现请前往仓库[操作系统课程设计Vue后端](https://github.com/lxy764139720/OS_experiment)**
+**本仓库为前端实现代码，后端可视化实现请前往仓库[操作系统课程设计Vue后端](https://github.com/lxysl/OS_experiment)**
 
 ---
 
@@ -30,7 +30,7 @@
 
 ### 1. clone后端仓库
 ```bash
-git clone https://github.com/lxy764139720/OS_experiment
+git clone https://github.com/lxysl/OS_experiment
 ```
 
 ### 2. 安装环境
@@ -86,7 +86,7 @@ npm run serve
 
 内存空间分页中展示了当前所有的内存分区表，其中进程号-1表示操作系统占用内存，用橘黄色表示，-2表示未分配内存用绿色表示。
 
-通过修改后端的 [Cofig.py](https://github.com/lxy764139720/OS_experiment/blob/master/proc/Config.py) 配置文件，可以很方便的改变内存大小。
+通过修改后端的 [Cofig.py](https://github.com/lxysl/OS_experiment/blob/master/proc/Config.py) 配置文件，可以很方便的改变内存大小。
 
 ![查看内存](./pic/feature3.png)
 
@@ -96,7 +96,7 @@ npm run serve
 
 ![查看处理机](./pic/feature4.png)
 
-通过修改后端的 [Cofig.py](https://github.com/lxy764139720/OS_experiment/blob/master/proc/Config.py) 配置文件，可以很方便的改变处理机的个数，下图所示为5台处理机分配三个进程时的情况。
+通过修改后端的 [Cofig.py](https://github.com/lxysl/OS_experiment/blob/master/proc/Config.py) 配置文件，可以很方便的改变处理机的个数，下图所示为5台处理机分配三个进程时的情况。
 
 ![修改处理机](./pic/feature5.png)
 
